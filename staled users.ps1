@@ -1,0 +1,51 @@
+$tenantID="b46876a4-f74b-431c-b751-2d9b9bc5779a"
+$contentType = "application/json"
+$exportpath = "C:\TEMP\User_Signin_Activity.csv"
+
+$Body = @{    
+    Grant_Type    = "client_credentials"
+    Scope         = "https://graph.microsoft.com/.default"
+    client_Id     = "1f65fa14-7b8f-416d-9553-3091389cda3e"
+    Client_Secret = "UAW8Q~qjn4Fji8b8LpJoW5RuY_BxyoZPEts39cne"
+}
+$ConnectGraph = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$tenantID/oauth2/v2.0/token" -Method POST -Body $Body
+
+$token = $ConnectGraph.access_token
+$headers = @{ 'Authorization' = "Bearer $token" }
+
+
+$queryURL = 'https://graph.microsoft.com/beta/users?$select=displayName,createddatetime,userprincipalname,mail,usertype,signInActivity,accountEnabled,companyName'
+$SignInData = Invoke-RestMethod -Method GET -Uri $queryUrl -Headers $headers -contentType $contentType
+$relLink = $SignInData.'@odata.nextLink'
+
+$outList = @()
+while ($SignInData.'@odata.nextLink' -ne $null){
+   foreach ($relLink in $SignInData.'@odata.nextLink') {
+      Write-Output "Getting data from $relLink"
+      $SignInData = Invoke-RestMethod -Method GET -Uri $relLink -Headers $headers -contentType $contentType
+
+          foreach ($user in $SignInData.Value) {
+            If ($Null -ne $User.SignInActivity)     {
+               $LastSignIn = Get-Date($User.SignInActivity.LastSignInDateTime)
+               $DaysSinceSignIn = (New-TimeSpan $LastSignIn).Days }
+            Else { #No sign in data for user
+               $LastSignIn = "Never or > 90 days" 
+               $DaysSinceSignIn = "N/A" }
+
+              $Values  = [PSCustomObject] @{
+                  UPN                = $User.UserPrincipalName
+                  DisplayName        = $User.DisplayName
+                  Email              = $User.Mail
+                  Created            = Get-Date($User.CreatedDateTime)
+                  LastSignIn         = $LastSignIn
+                  DaysSinceSignIn    = $DaysSinceSignIn
+                  UserType           = $User.UserType
+                  accountEnabled     = $user.accountEnabled
+                  Company            = $user.companyName}
+                $outList += $Values
+          }
+  }
+}
+
+$outList.Count
+$outList | Export-Csv -Path $exportpath -Encoding UTF8 -NoTypeInformation
