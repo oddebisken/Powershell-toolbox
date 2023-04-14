@@ -1,12 +1,12 @@
-$tenantID="b46876a4-f74b-431c-b751-2d9b9bc5779a"
+$tenantID="xxxxxxxx-xxxxx-xxxx"
 $contentType = "application/json"
 $exportpath = "C:\TEMP\User_Signin_Activity.csv"
 
 $Body = @{    
     Grant_Type    = "client_credentials"
     Scope         = "https://graph.microsoft.com/.default"
-    client_Id     = "1f65fa14-7b8f-416d-9553-3091389cda3e"
-    Client_Secret = "UAW8Q~qjn4Fji8b8LpJoW5RuY_BxyoZPEts39cne"
+    client_Id     = "xxxxx-xx-x-x-x--xxx"
+    Client_Secret = "xxxxxxxxxxxxxxxxxx"
 }
 $ConnectGraph = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$tenantID/oauth2/v2.0/token" -Method POST -Body $Body
 
